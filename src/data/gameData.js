@@ -179,9 +179,12 @@ function generateWildcards({ includePrizeWildcards = true } = {}) {
   ];
   const types = [...baseTypes, ...(includePrizeWildcards ? prizeTypes : safeFallbackTypes)];
   
-  // Shuffle and assign to numbers 1-15 (excluding real words and decoys)
-  const availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-  const shuffled = availableNumbers.sort(() => Math.random() - 0.5);
+  // Fisher-Yates shuffle to assign numbers 1-15
+  const shuffled = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   
   return types.map((type, idx) => ({
     number: shuffled[idx],

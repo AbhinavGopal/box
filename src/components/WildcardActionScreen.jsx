@@ -7,9 +7,6 @@ import {
   Text,
   VStack,
   Button,
-  NativeSelectRoot,
-  NativeSelectField,
-  NativeSelectIndicator,
 } from '@chakra-ui/react';
 
 export function WildcardActionScreen() {
@@ -22,7 +19,7 @@ export function WildcardActionScreen() {
 
   const handleConfirm = () => {
     let data = {};
-    
+
     switch (wildcard.type) {
       case 'STEAL':
         if (!selectedTeam || !selectedBox) {
@@ -98,7 +95,12 @@ export function WildcardActionScreen() {
   };
 
   const teamsWithBoxes = gameState.teams.filter(t => t.boxesWon.length > 0);
-  const otherTeams = gameState.teams.filter(t => t.id !== gameState.currentTeamId);
+  // Exclude current team, and for WHO'S NEXT / PRIZE_FIGHT / FREEZE_OUT also exclude frozen teams
+  const otherTeams = gameState.teams.filter(t => {
+    if (t.id === gameState.currentTeamId) return false;
+    if (t.frozenOut && (wildcard.type === 'WHOS_NEXT' || wildcard.type === 'PRIZE_FIGHT' || wildcard.type === 'FREEZE_OUT')) return false;
+    return true;
+  });
 
   return (
     <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center" p={8}>
@@ -120,16 +122,35 @@ export function WildcardActionScreen() {
           </VStack>
 
           {(wildcard.type === 'EXTRA_TURN' || wildcard.type === 'REMOVE_DECOY') && (
-            <Button
-              onClick={() => handleWildcard(wildcard.type, {})}
-              size="lg"
-              w="full"
-              colorScheme="purple"
-              fontSize="lg"
-              fontWeight="600"
-            >
-              Continue
-            </Button>
+            <VStack spacing={4} w="full">
+              {wildcard.type === 'REMOVE_DECOY' && wildcard.removedDecoy && (
+                <Box
+                  w="full"
+                  p={4}
+                  borderWidth="1px"
+                  borderColor="red.700"
+                  bg="red.950"
+                  borderRadius="lg"
+                >
+                  <Text fontSize="sm" color="red.200" fontWeight="600" textTransform="uppercase" letterSpacing="wide">
+                    Removed Decoy
+                  </Text>
+                  <Text fontSize="lg" color="white" fontWeight="600">
+                    #{wildcard.removedDecoy.number} — {wildcard.removedDecoy.word}
+                  </Text>
+                </Box>
+              )}
+              <Button
+                onClick={() => handleWildcard(wildcard.type, {})}
+                size="lg"
+                w="full"
+                colorScheme="purple"
+                fontSize="lg"
+                fontWeight="600"
+              >
+                Continue
+              </Button>
+            </VStack>
           )}
 
           {(wildcard.type === 'STEAL' || wildcard.type === 'PRIZE_PASS') && (
@@ -138,29 +159,31 @@ export function WildcardActionScreen() {
                 <Text color="gray.300" fontSize="sm" fontWeight="500">
                   Select team:
                 </Text>
-                <NativeSelectRoot
-                  value={[selectedTeam]}
-                  onValueChange={(e) => {
-                    setSelectedTeam(e.value[0] || '');
+                <Box
+                  as="select"
+                  value={selectedTeam}
+                  onChange={(e) => {
+                    setSelectedTeam(e.target.value);
                     setSelectedBox('');
                   }}
+                  bg="gray.900"
+                  borderColor="gray.800"
+                  borderWidth="1px"
+                  borderRadius="md"
+                  color="white"
+                  px={4}
+                  py={3}
+                  fontSize="md"
+                  _hover={{ borderColor: 'gray.700' }}
+                  _focus={{ borderColor: 'purple.500', outline: 'none' }}
                 >
-                  <NativeSelectField
-                    bg="gray.900"
-                    borderColor="gray.800"
-                    color="white"
-                    _hover={{ borderColor: 'gray.700' }}
-                    _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)' }}
-                  >
-                    <option value="">Choose a team...</option>
-                    {(wildcard.type === 'STEAL' ? teamsWithBoxes : gameState.teams).map(team => (
-                      <option key={team.id} value={team.id}>
-                        {team.name} {wildcard.type === 'STEAL' && `(${team.boxesWon.length} boxes)`}
-                      </option>
-                    ))}
-                  </NativeSelectField>
-                  <NativeSelectIndicator />
-                </NativeSelectRoot>
+                  <option value="">Choose a team...</option>
+                  {teamsWithBoxes.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} ({team.boxesWon.length} box{team.boxesWon.length !== 1 ? 'es' : ''})
+                    </option>
+                  ))}
+                </Box>
               </VStack>
 
               {selectedTeam && wildcard.type === 'STEAL' && (
@@ -168,28 +191,30 @@ export function WildcardActionScreen() {
                   <Text color="gray.300" fontSize="sm" fontWeight="500">
                     Select box to steal:
                   </Text>
-                  <NativeSelectRoot
-                    value={[selectedBox]}
-                    onValueChange={(e) => setSelectedBox(e.value[0] || '')}
+                  <Box
+                    as="select"
+                    value={selectedBox}
+                    onChange={(e) => setSelectedBox(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.800"
+                    borderWidth="1px"
+                    borderRadius="md"
+                    color="white"
+                    px={4}
+                    py={3}
+                    fontSize="md"
+                    _hover={{ borderColor: 'gray.700' }}
+                    _focus={{ borderColor: 'purple.500', outline: 'none' }}
                   >
-                    <NativeSelectField
-                      bg="gray.900"
-                      borderColor="gray.800"
-                      color="white"
-                      _hover={{ borderColor: 'gray.700' }}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)' }}
-                    >
-                      <option value="">Choose a box...</option>
-                      {gameState.boxes
-                        .filter(b => b.wonBy === selectedTeam)
-                        .map(box => (
-                          <option key={box.id} value={box.id}>
-                            {box.category}
-                          </option>
-                        ))}
-                    </NativeSelectField>
-                    <NativeSelectIndicator />
-                  </NativeSelectRoot>
+                    <option value="">Choose a box...</option>
+                    {gameState.boxes
+                      .filter(b => b.wonBy === selectedTeam)
+                      .map(box => (
+                        <option key={box.id} value={box.id}>
+                          {box.category}
+                        </option>
+                      ))}
+                  </Box>
                 </VStack>
               )}
 
@@ -198,28 +223,30 @@ export function WildcardActionScreen() {
                   <Text color="gray.300" fontSize="sm" fontWeight="500">
                     Select destination team:
                   </Text>
-                  <NativeSelectRoot
-                    value={[selectedBox]}
-                    onValueChange={(e) => setSelectedBox(e.value[0] || '')}
+                  <Box
+                    as="select"
+                    value={selectedBox}
+                    onChange={(e) => setSelectedBox(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.800"
+                    borderWidth="1px"
+                    borderRadius="md"
+                    color="white"
+                    px={4}
+                    py={3}
+                    fontSize="md"
+                    _hover={{ borderColor: 'gray.700' }}
+                    _focus={{ borderColor: 'purple.500', outline: 'none' }}
                   >
-                    <NativeSelectField
-                      bg="gray.900"
-                      borderColor="gray.800"
-                      color="white"
-                      _hover={{ borderColor: 'gray.700' }}
-                      _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)' }}
-                    >
-                      <option value="">Choose a team...</option>
-                      {gameState.teams
-                        .filter(t => t.id !== selectedTeam)
-                        .map(team => (
-                          <option key={team.id} value={team.id}>
-                            {team.name}
-                          </option>
-                        ))}
-                    </NativeSelectField>
-                    <NativeSelectIndicator />
-                  </NativeSelectRoot>
+                    <option value="">Choose a team...</option>
+                    {gameState.teams
+                      .filter(t => t.id !== selectedTeam)
+                      .map(team => (
+                        <option key={team.id} value={team.id}>
+                          {team.name}
+                        </option>
+                      ))}
+                  </Box>
                 </VStack>
               )}
             </VStack>

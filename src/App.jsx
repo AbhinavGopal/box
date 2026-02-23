@@ -7,6 +7,7 @@ import { OrderingQuestionScreen } from './components/OrderingQuestionScreen';
 import { RevealScreen } from './components/RevealScreen';
 import { WildcardActionScreen } from './components/WildcardActionScreen';
 import { CelebrationScreen } from './components/CelebrationScreen';
+import { StandingsButton } from './components/StandingsButton';
 
 function GameRouter() {
   const { gameState } = useGame();
@@ -36,10 +37,12 @@ function GameRouter() {
 function App() {
   return (
     <GameProvider>
+      <StandingsButton />
       <GameRouter />
     </GameProvider>
   );
 }
 
 export default App;
+
 

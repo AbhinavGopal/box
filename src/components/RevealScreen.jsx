@@ -1,6 +1,5 @@
 import { useGame } from '../context/GameContext';
 import { getGridLayout } from '../utils/gridGenerator';
-import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -15,8 +14,6 @@ import {
 
 export function RevealScreen() {
   const { gameState, revealNumber, selectWord, setGameState } = useGame();
-  const [localRevealed, setLocalRevealed] = useState(new Set());
-  const [localWords, setLocalWords] = useState(new Map());
 
   const box = gameState.currentBoxId
     ? gameState.boxes.find(b => b.id === gameState.currentBoxId) || gameState.superbox
@@ -26,14 +23,8 @@ export function RevealScreen() {
 
   const gridLayout = getGridLayout();
 
-  // Reset local state when box changes
-  useEffect(() => {
-    setLocalRevealed(new Set());
-    setLocalWords(new Map());
-  }, [gameState.currentBoxId]);
-
   const handleNumberClick = (number) => {
-    if (gameState.turnsRemaining <= 0 || localRevealed.has(number)) return;
+    if (gameState.turnsRemaining <= 0) return;
 
     // Don't allow clicking already revealed numbers
     if (box.revealedNumbers && box.revealedNumbers.has(number)) return;
@@ -41,14 +32,10 @@ export function RevealScreen() {
     const item = gridItems.find(i => i.number === number);
     if (!item) return;
 
-    setLocalRevealed(new Set([...localRevealed, number]));
-
     if (item.type === 'wildcard') {
       revealNumber(number);
     } else if (item.type === 'word' || item.type === 'decoy') {
-      const word = item.content;
-      setLocalWords(new Map([...localWords, [number, word]]));
-      revealNumber(number, word);
+      revealNumber(number, item.content);
     }
   };
 
@@ -57,20 +44,16 @@ export function RevealScreen() {
   };
 
   const getRevealedWord = (number) => {
-    return localWords.get(number) || box?.revealedWords.get(number) || null;
+    return box?.revealedWords.get(number) || null;
   };
 
   const isRevealed = (number) => {
-    return localRevealed.has(number) || box?.revealedNumbers.has(number) || false;
+    return box?.revealedNumbers.has(number) || false;
   };
 
   if (!box) return null;
 
-  const allRevealedWords = new Set([
-    ...Array.from(localWords.values()),
-    ...Array.from(box.revealedWords.values()),
-  ]);
-  const revealedWordsList = Array.from(allRevealedWords);
+  const revealedWordsList = Array.from(box.revealedWords.values());
 
   return (
     <Box minH="100vh" bg="black" p={8}>
@@ -167,15 +150,16 @@ export function RevealScreen() {
                     let bgColor = 'gray.800';
                     let borderColor = 'gray.700';
                     if (revealed) {
-                      if (item?.type === 'wildcard') {
-                        bgColor = 'yellow.600';
-                        borderColor = 'yellow.500';
-                      } else if (item?.type === 'decoy') {
+                      // All revealed words/decoys look the same (purple) until the
+                      // player clicks them in the word list below.
+                      // Only removed-decoys (via REMOVE_DECOY wildcard) show red.
+                      const isRemovedDecoy = word && box.removedDecoys && box.removedDecoys.includes(word);
+                      if (isRemovedDecoy) {
                         bgColor = 'red.900';
                         borderColor = 'red.800';
                       } else {
-                        bgColor = 'green.600';
-                        borderColor = 'green.500';
+                        bgColor = 'purple.900';
+                        borderColor = 'purple.700';
                       }
                     }
 
@@ -235,8 +219,9 @@ export function RevealScreen() {
                       const isPhraseWord = box.phrase.includes(word);
                       const isSelected = box.selectedWords.includes(word);
                       const isWrongSelection = box.wrongSelections.includes(word);
+                      const isRemovedDecoy = box.removedDecoys.includes(word);
                       const canSelectPhrase = isPhraseWord && !isSelected && filledCount < box.phrase.length;
-                      const canSelectDecoy = !isPhraseWord && !isWrongSelection;
+                      const canSelectDecoy = !isPhraseWord && !isWrongSelection && !isRemovedDecoy;
                       const canSelectWord = canSelectPhrase || canSelectDecoy;
 
                       return (
@@ -245,7 +230,7 @@ export function RevealScreen() {
                           onClick={() => handleWordClick(word)}
                           disabled={!canSelectWord}
                           size="md"
-                          bg={isSelected ? 'green.600' : isWrongSelection ? 'gray.800' : 'black'}
+                          bg={isSelected ? 'green.600' : (isWrongSelection || isRemovedDecoy) ? 'gray.800' : 'black'}
                           color="white"
                           borderWidth={isSelected ? '0' : '1px'}
                           borderColor="gray.700"

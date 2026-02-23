@@ -22,6 +22,7 @@ function buildBoxState(id, boxData) {
     revealedWords: new Map(),
     selectedWords: Array(boxData.phrase.length).fill(''),
     wrongSelections: [],
+    removedDecoys: [],
   };
 }
 
@@ -42,6 +43,7 @@ export function GameProvider({ children }) {
       revealedWords: new Map(),
       selectedWords: [],
       wrongSelections: [],
+      removedDecoys: [],
     },
     currentPhase: 'setup',
     currentBoxId: null,
@@ -194,41 +196,12 @@ export function GameProvider({ children }) {
       // Handle wildcard
       // REMOVE_DECOY doesn't need user interaction - handle it immediately
       if (wildcard.type === 'REMOVE_DECOY') {
-        // Generate grid to find unrevealed decoys
-        // Filter out STEAL/PRIZE_PASS if needed
-        const teamsHaveBoxes = gameState.teams && gameState.teams.length > 0 &&
-          gameState.teams.some(team => team.boxesWon && Array.isArray(team.boxesWon) && team.boxesWon.length > 0);
-        const boxesAreWon = gameState.boxes && gameState.boxes.length > 0 &&
-          gameState.boxes.some(b => b && b.status === 'won');
-        const hasWonBoxes = teamsHaveBoxes || boxesAreWon;
-
-        let filteredWildcards = box.wildcards || [];
-        let extraDecoys = [];
-        if (!hasWonBoxes) {
-          const filteredOut = filteredWildcards.filter(w =>
-            w && (w.type === 'STEAL' || w.type === 'PRIZE_PASS')
-          );
-          filteredWildcards = filteredWildcards.filter(w =>
-            w && w.type !== 'STEAL' && w.type !== 'PRIZE_PASS'
-          );
-          filteredOut.forEach((wildcard, idx) => {
-            if (box.decoys && box.decoys.length > 0 && wildcard && wildcard.number) {
-              const decoyIndex = idx % box.decoys.length;
-              extraDecoys.push({
-                number: wildcard.number,
-                content: box.decoys[decoyIndex],
-              });
-            }
-          });
-        }
-
-        const gridItems = generateGrid(box.realWords, box.decoys, filteredWildcards, extraDecoys);
-
-        // Find unrevealed decoys in the grid
-        const unrevealedDecoyItems = gridItems.filter(item =>
+        // Use the pre-generated gridItems to find unrevealed decoys
+        const unrevealedDecoyItems = (box.gridItems || []).filter(item =>
           item.type === 'decoy' &&
           !box.revealedNumbers.has(item.number) &&
-          item.number !== number // Don't remove the REMOVE_DECOY wildcard itself
+          !(box.removedDecoys || []).includes(item.content) &&
+          item.number !== number
         );
 
         if (unrevealedDecoyItems.length > 0) {
@@ -244,7 +217,17 @@ export function GameProvider({ children }) {
                 ...gameState.superbox,
                 decoys: gameState.superbox.decoys.filter(d => d !== decoyToRemove.content),
                 revealedNumbers: new Set([...gameState.superbox.revealedNumbers, number, decoyToRemove.number]),
+                revealedWords: new Map([...gameState.superbox.revealedWords, [decoyToRemove.number, decoyToRemove.content]]),
+                removedDecoys: [...gameState.superbox.removedDecoys, decoyToRemove.content],
               },
+              wildcardAction: {
+                type: 'REMOVE_DECOY',
+                removedDecoy: {
+                  number: decoyToRemove.number,
+                  word: decoyToRemove.content,
+                },
+              },
+              currentPhase: 'wildcard_action',
             });
           } else {
             setGameState({
@@ -256,9 +239,19 @@ export function GameProvider({ children }) {
                     ...b,
                     decoys: b.decoys.filter(d => d !== decoyToRemove.content),
                     revealedNumbers: new Set([...b.revealedNumbers, number, decoyToRemove.number]),
+                    revealedWords: new Map([...b.revealedWords, [decoyToRemove.number, decoyToRemove.content]]),
+                    removedDecoys: [...b.removedDecoys, decoyToRemove.content],
                   }
                   : b
               ),
+              wildcardAction: {
+                type: 'REMOVE_DECOY',
+                removedDecoy: {
+                  number: decoyToRemove.number,
+                  word: decoyToRemove.content,
+                },
+              },
+              currentPhase: 'wildcard_action',
             });
           }
         } else {
@@ -271,6 +264,8 @@ export function GameProvider({ children }) {
                 ...gameState.superbox,
                 revealedNumbers: new Set([...gameState.superbox.revealedNumbers, number]),
               },
+              wildcardAction: { type: 'REMOVE_DECOY' },
+              currentPhase: 'wildcard_action',
             });
           } else {
             setGameState({
@@ -284,6 +279,8 @@ export function GameProvider({ children }) {
                   }
                   : b
               ),
+              wildcardAction: { type: 'REMOVE_DECOY' },
+              currentPhase: 'wildcard_action',
             });
           }
         }

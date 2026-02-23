@@ -86,19 +86,26 @@ export function OrderingQuestionScreen() {
     );
   }
 
+  const currentTeam = gameState.teams.find(t => t.id === gameState.currentTeamId);
+
   return (
     <Box minH="100vh" bg="black" p={8} display="flex" alignItems="center" justifyContent="center">
       <Container maxW="4xl" centerContent>
         <VStack spacing={10} w="full">
-          <Heading
-            fontSize={{ base: '2xl', md: '3xl' }}
-            fontWeight="300"
-            textAlign="center"
-            letterSpacing="tight"
-            color="white"
-          >
-            {question.question}
-          </Heading>
+          <VStack spacing={2}>
+            <Badge colorScheme="purple" fontSize="md" px={4} py={1} borderRadius="full">
+              {currentTeam?.name}'s Turn
+            </Badge>
+            <Heading
+              fontSize={{ base: '2xl', md: '3xl' }}
+              fontWeight="300"
+              textAlign="center"
+              letterSpacing="tight"
+              color="white"
+            >
+              {question.question}
+            </Heading>
+          </VStack>
 
           <VStack spacing={6} w="full">
             <Text fontSize="md" color="gray.400" fontWeight="500" alignSelf="flex-start">
