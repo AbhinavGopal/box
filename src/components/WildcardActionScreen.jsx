@@ -94,10 +94,13 @@ export function WildcardActionScreen() {
     }
   };
 
-  const teamsWithBoxes = gameState.teams.filter(t => t.boxesWon.length > 0);
-  // Exclude current team, and for WHO'S NEXT / PRIZE_FIGHT / FREEZE_OUT also exclude frozen teams
+  const prizeFight = gameState.prizeFightTeams;
+  const superboxCompetitors = gameState.superboxCompetitors;
+  const teamsWithBoxes = gameState.teams.filter(t => t.boxesWon.length > 0 && t.id !== gameState.currentTeamId && !t.eliminated);
   const otherTeams = gameState.teams.filter(t => {
-    if (t.id === gameState.currentTeamId) return false;
+    if (t.id === gameState.currentTeamId || t.eliminated) return false;
+    if (prizeFight && !prizeFight.includes(t.id)) return false;
+    if (superboxCompetitors && !superboxCompetitors.includes(t.id)) return false;
     if (t.frozenOut && (wildcard.type === 'WHOS_NEXT' || wildcard.type === 'PRIZE_FIGHT' || wildcard.type === 'FREEZE_OUT')) return false;
     return true;
   });
@@ -240,7 +243,7 @@ export function WildcardActionScreen() {
                   >
                     <option value="">Choose a team...</option>
                     {gameState.teams
-                      .filter(t => t.id !== selectedTeam)
+                      .filter(t => t.id !== selectedTeam && t.id !== gameState.currentTeamId && !t.eliminated)
                       .map(team => (
                         <option key={team.id} value={team.id}>
                           {team.name}

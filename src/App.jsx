@@ -7,6 +7,7 @@ import { OrderingQuestionScreen } from './components/OrderingQuestionScreen';
 import { RevealScreen } from './components/RevealScreen';
 import { WildcardActionScreen } from './components/WildcardActionScreen';
 import { CelebrationScreen } from './components/CelebrationScreen';
+import { SuperboxSelectionScreen } from './components/SuperboxSelectionScreen';
 import { StandingsButton } from './components/StandingsButton';
 
 function GameRouter() {
@@ -17,6 +18,8 @@ function GameRouter() {
       return <SetupScreen />;
     case 'main':
       return <MainScreen />;
+    case 'superbox_selection':
+      return <SuperboxSelectionScreen />;
     case 'numerical':
       return <NumericalQuestionScreen />;
     case 'ready':

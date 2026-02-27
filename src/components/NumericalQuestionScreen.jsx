@@ -17,6 +17,7 @@ export function NumericalQuestionScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState(null);
   const [winningTeam, setWinningTeam] = useState(null);
+  const [tiedTeams, setTiedTeams] = useState([]);
 
   const question = gameState.numericalQuestions.find(q => !q.used);
 
@@ -24,7 +25,12 @@ export function NumericalQuestionScreen() {
     setAnswers({ ...answers, [teamId]: value });
   };
 
-  const eligibleTeams = gameState.teams.filter(t => !t.frozenOut);
+  const eligibleTeams = gameState.teams.filter(t => {
+    if (t.eliminated || t.frozenOut) return false;
+    if (gameState.prizeFightTeams && !gameState.prizeFightTeams.includes(t.id)) return false;
+    if (gameState.currentBoxId === 'superbox' && gameState.superboxCompetitors && !gameState.superboxCompetitors.includes(t.id)) return false;
+    return true;
+  });
 
   const handleSubmit = () => {
     if (!question) return;
@@ -37,30 +43,35 @@ export function NumericalQuestionScreen() {
     const correct = question.answer;
     setCorrectAnswer(correct);
 
-    let closestTeam = eligibleTeams[0];
     let minDiff = Infinity;
-
     eligibleTeams.forEach(team => {
       const diff = Math.abs(numericAnswers[team.id] - correct);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestTeam = team;
-      }
+      if (diff < minDiff) minDiff = diff;
     });
 
-    setWinningTeam(closestTeam.id);
+    const closest = eligibleTeams.filter(team =>
+      Math.abs(numericAnswers[team.id] - correct) === minDiff
+    );
+    const isTie = closest.length > 1;
+    setTiedTeams(closest.map(t => t.id));
+    setWinningTeam(isTie ? null : closest[0].id);
     setSubmitted(true);
   };
 
   const handleReady = () => {
-    if (winningTeam) {
-      submitNumericalAnswers(
-        gameState.teams.reduce((acc, team) => {
-          acc[team.id] = parseInt(answers[team.id] || '0', 10);
-          return acc;
-        }, {})
-      );
-    }
+    const answersObj = gameState.teams.reduce((acc, team) => {
+      acc[team.id] = parseInt(answers[team.id] || '0', 10);
+      return acc;
+    }, {});
+    submitNumericalAnswers(answersObj, winningTeam || undefined);
+  };
+
+  const handleTiebreakSelect = (teamId) => {
+    const answersObj = gameState.teams.reduce((acc, team) => {
+      acc[team.id] = parseInt(answers[team.id] || '0', 10);
+      return acc;
+    }, {});
+    submitNumericalAnswers(answersObj, teamId);
   };
 
   if (!question) {
@@ -87,6 +98,10 @@ export function NumericalQuestionScreen() {
 
           <VStack spacing={6} w="full">
             {gameState.teams.map(team => {
+              const isExcluded = team.eliminated
+                || (gameState.prizeFightTeams && !gameState.prizeFightTeams.includes(team.id))
+                || (gameState.currentBoxId === 'superbox' && gameState.superboxCompetitors && !gameState.superboxCompetitors.includes(team.id));
+              if (isExcluded) return null;
               const isFrozen = team.frozenOut;
               if (isFrozen) {
                 return (
@@ -123,10 +138,10 @@ export function NumericalQuestionScreen() {
                     <Text
                       fontSize="lg"
                       fontWeight="bold"
-                      color={winningTeam === team.id ? 'green.400' : 'gray.500'}
+                      color={(winningTeam === team.id || tiedTeams.includes(team.id)) ? 'green.400' : 'gray.500'}
                       minW="100px"
                     >
-                      {winningTeam === team.id ? '✓ Closest!' : ''}
+                      {(winningTeam === team.id || tiedTeams.includes(team.id)) ? '✓ Closest!' : ''}
                     </Text>
                   )}
                 </HStack>
@@ -140,9 +155,30 @@ export function NumericalQuestionScreen() {
               <Text fontSize="5xl" fontWeight="bold" color="green.400">
                 {correctAnswer}
               </Text>
-              <Text fontSize="xl" color="purple.300" fontWeight="500">
-                {gameState.teams.find(t => t.id === winningTeam)?.name} wins this round!
-              </Text>
+              {tiedTeams.length > 1 ? (
+                <VStack spacing={4} w="full">
+                  <Text fontSize="xl" color="yellow.400" fontWeight="500">
+                    Tie! Click to select which team gets control:
+                  </Text>
+                  <HStack spacing={4} justify="center" flexWrap="wrap">
+                    {tiedTeams.map(teamId => (
+                      <Button
+                        key={teamId}
+                        onClick={() => handleTiebreakSelect(teamId)}
+                        colorScheme="yellow"
+                        color="black"
+                        size="lg"
+                      >
+                        {gameState.teams.find(t => t.id === teamId)?.name}
+                      </Button>
+                    ))}
+                  </HStack>
+                </VStack>
+              ) : (
+                <Text fontSize="xl" color="purple.300" fontWeight="500">
+                  {gameState.teams.find(t => t.id === winningTeam)?.name} wins this round!
+                </Text>
+              )}
             </VStack>
           )}
 
@@ -159,7 +195,7 @@ export function NumericalQuestionScreen() {
             >
               Submit Answers
             </Button>
-          ) : (
+          ) : tiedTeams.length <= 1 ? (
             <Button
               onClick={handleReady}
               size="lg"
@@ -170,7 +206,7 @@ export function NumericalQuestionScreen() {
             >
               Ready for Ordering Question
             </Button>
-          )}
+          ) : null}
         </VStack>
       </Container>
     </Box>

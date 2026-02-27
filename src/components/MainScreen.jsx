@@ -20,7 +20,7 @@ const categoryEmojis = {
 };
 
 export function MainScreen() {
-  const { gameState, startBox } = useGame();
+  const { gameState, setGameState, startBox } = useGame();
 
   const nextBoxIndex = gameState.boxes.findIndex(b => b.status !== 'won');
 
@@ -33,7 +33,11 @@ export function MainScreen() {
     if (boxId === 'superbox') {
       const boxesWon = gameState.boxes.filter(b => b.status === 'won').length;
       if (boxesWon >= 2 && gameState.superbox.status !== 'won') {
-        startBox('superbox');
+        setGameState({
+          ...gameState,
+          currentPhase: 'superbox_selection',
+          currentBoxId: 'superbox',
+        });
       }
       return;
     }

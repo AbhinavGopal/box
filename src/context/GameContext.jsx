@@ -52,6 +52,8 @@ export function GameProvider({ children }) {
     orderingQuestions: gameData.orderingQuestions,
     turnsRemaining: 0,
     wildcardAction: null,
+    prizeFightTeams: null,
+    superboxCompetitors: null,
   });
 
   const initializeGame = (teamNames) => {
@@ -60,6 +62,7 @@ export function GameProvider({ children }) {
       name,
       boxesWon: [],
       frozenOut: false,
+      eliminated: false,
     }));
 
     const boxes = gameData.boxes.map((boxData, idx) => buildBoxState(`box-${idx}`, boxData));
@@ -107,27 +110,50 @@ export function GameProvider({ children }) {
       currentPhase: 'numerical',
       currentTeamId: null,
       turnsRemaining: 0,
+      prizeFightTeams: null,
+      superboxCompetitors: null,
     });
   };
 
-  const submitNumericalAnswers = (answers) => {
+  const beginSuperbox = (competitorIds) => {
+    if (!competitorIds || competitorIds.length !== 2) return;
+    const updatedTeams = gameState.teams.map(team => ({ ...team, frozenOut: false }));
+    setGameState({
+      ...gameState,
+      teams: updatedTeams,
+      currentBoxId: 'superbox',
+      currentPhase: 'numerical',
+      currentTeamId: null,
+      turnsRemaining: 0,
+      prizeFightTeams: null,
+      superboxCompetitors: competitorIds,
+    });
+  };
+
+  const submitNumericalAnswers = (answers, tiebreakWinnerId = null) => {
     const question = gameState.numericalQuestions.find(q => !q.used);
     if (!question) return;
 
     const correctAnswer = question.answer;
 
-    // Find closest team (excluding frozen out teams)
-    const eligibleTeams = gameState.teams.filter(t => !t.frozenOut);
-    let closestTeam = eligibleTeams[0];
-    let minDiff = Infinity;
-
-    eligibleTeams.forEach(team => {
-      const diff = Math.abs(answers[team.id] - correctAnswer);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestTeam = team;
-      }
+    const eligibleTeams = gameState.teams.filter(t => {
+      if (t.eliminated || t.frozenOut) return false;
+      if (gameState.prizeFightTeams && !gameState.prizeFightTeams.includes(t.id)) return false;
+      if (gameState.currentBoxId === 'superbox' && gameState.superboxCompetitors && !gameState.superboxCompetitors.includes(t.id)) return false;
+      return true;
     });
+
+    let winningTeamId = tiebreakWinnerId;
+    if (!winningTeamId) {
+      let minDiff = Infinity;
+      eligibleTeams.forEach(team => {
+        const diff = Math.abs(answers[team.id] - correctAnswer);
+        if (diff < minDiff) {
+          minDiff = diff;
+          winningTeamId = team.id;
+        }
+      });
+    }
 
     // Mark question as used
     const updatedQuestions = gameState.numericalQuestions.map(q =>
@@ -137,51 +163,75 @@ export function GameProvider({ children }) {
     setGameState({
       ...gameState,
       numericalQuestions: updatedQuestions,
-      currentTeamId: closestTeam.id,
+      currentTeamId: winningTeamId,
       currentPhase: 'ready',
     });
   };
 
   const submitOrdering = (order) => {
-    const box = gameState.boxes.find(b => b.id === gameState.currentBoxId);
-    if (!box) return;
+    setGameState(prev => {
+      const box = prev.currentBoxId === 'superbox'
+        ? prev.superbox
+        : prev.boxes.find(b => b.id === prev.currentBoxId);
+      if (!box) return prev;
 
-    const question = gameState.orderingQuestions.find(q => !q.used);
-    if (!question) return;
+      const question = prev.orderingQuestions.find(q => !q.used);
+      if (!question) {
+        // No more ordering questions - transition to numerical (caller got 0 turns)
+        if (!prev.prizeFightTeams && !prev.superboxCompetitors) {
+          return { ...prev, currentPhase: 'numerical', currentTeamId: null };
+        }
+        return prev;
+      }
 
-    const correctOrder = question.correctOrder;
-    let correctCount = 0;
-
-    order.forEach((item, idx) => {
-      if (item === correctOrder[idx]) correctCount++;
-    });
-
-    let turnsEarned = 0;
-    if (correctCount === 4) turnsEarned = 3;
-    else if (correctCount === 2) turnsEarned = 2;
-    else if (correctCount === 1) turnsEarned = 1;
-
-    // Mark question as used
-    const updatedQuestions = gameState.orderingQuestions.map(q =>
-      q.id === question.id ? { ...q, used: true } : q
-    );
-
-    if (turnsEarned > 0) {
-      setGameState({
-        ...gameState,
-        orderingQuestions: updatedQuestions,
-        turnsRemaining: gameState.turnsRemaining + turnsEarned,
-        currentPhase: 'reveal',
+      const correctOrder = question.correctOrder;
+      let correctCount = 0;
+      order.forEach((item, idx) => {
+        if (item === correctOrder[idx]) correctCount++;
       });
-    } else {
-      // Back to numerical question
-      setGameState({
-        ...gameState,
+
+      let turnsEarned = 0;
+      if (correctCount === 4) turnsEarned = 3;
+      else if (correctCount === 2) turnsEarned = 2;
+      else if (correctCount === 1) turnsEarned = 1;
+
+      const updatedQuestions = prev.orderingQuestions.map(q =>
+        q.id === question.id ? { ...q, used: true } : q
+      );
+
+      if (turnsEarned > 0) {
+        return {
+          ...prev,
+          orderingQuestions: updatedQuestions,
+          turnsRemaining: prev.turnsRemaining + turnsEarned,
+          currentPhase: 'reveal',
+        };
+      }
+      if (prev.prizeFightTeams) {
+        const otherTeam = prev.prizeFightTeams.find(id => id !== prev.currentTeamId);
+        return {
+          ...prev,
+          orderingQuestions: updatedQuestions,
+          currentTeamId: otherTeam,
+          currentPhase: 'ordering',
+        };
+      }
+      if (prev.superboxCompetitors) {
+        const otherTeam = prev.superboxCompetitors.find(id => id !== prev.currentTeamId);
+        return {
+          ...prev,
+          orderingQuestions: updatedQuestions,
+          currentTeamId: otherTeam,
+          currentPhase: 'ordering',
+        };
+      }
+      return {
+        ...prev,
         orderingQuestions: updatedQuestions,
         currentPhase: 'numerical',
         currentTeamId: null,
-      });
-    }
+      };
+    });
   };
 
   const revealNumber = (number, word) => {
@@ -287,6 +337,17 @@ export function GameProvider({ children }) {
         return;
       }
 
+      let effectiveType = wildcard.type;
+      const otherTeamsWithBoxes = gameState.teams.filter(
+        t => t.id !== gameState.currentTeamId && !t.eliminated && t.boxesWon.length > 0
+      );
+      if ((wildcard.type === 'PRIZE_PASS' || wildcard.type === 'STEAL') && otherTeamsWithBoxes.length === 0) {
+        effectiveType = 'EXTRA_TURN';
+      }
+      if (wildcard.type === 'FREEZE_OUT' && gameState.prizeFightTeams) {
+        effectiveType = 'EXTRA_TURN';
+      }
+
       // Other wildcards need user interaction
       const updatedBoxes = gameState.currentBoxId === 'superbox'
         ? gameState.boxes
@@ -308,7 +369,7 @@ export function GameProvider({ children }) {
         turnsRemaining: gameState.turnsRemaining - 1,
         boxes: updatedBoxes,
         superbox: updatedSuperbox,
-        wildcardAction: { type: wildcard.type },
+        wildcardAction: { type: effectiveType },
         currentPhase: 'wildcard_action',
       });
     } else if (word) {
@@ -338,7 +399,7 @@ export function GameProvider({ children }) {
         ...gameState,
         boxes: updatedBoxes,
         superbox: updatedSuperbox,
-        turnsRemaining: isDecoy ? gameState.turnsRemaining - 1 : gameState.turnsRemaining,
+        turnsRemaining: gameState.turnsRemaining - 1,
       });
     }
   };
@@ -404,6 +465,8 @@ export function GameProvider({ children }) {
       ...gameState,
       boxes: updatedBoxes,
       superbox: updatedSuperbox,
+      turnsRemaining: 0,
+      currentPhase: 'ordering',
     });
   };
 
@@ -494,7 +557,7 @@ export function GameProvider({ children }) {
 
       case 'PRIZE_FIGHT':
         if (data?.opponentId) {
-          // Current team's turn ends, opponent gets control
+          updatedState.prizeFightTeams = [gameState.currentTeamId, data.opponentId];
           updatedState.currentTeamId = data.opponentId;
           updatedState.turnsRemaining = 0;
           updatedState.wildcardAction = null;
@@ -529,11 +592,19 @@ export function GameProvider({ children }) {
       ? { ...gameState.superbox, status: 'won', wonBy: teamId }
       : gameState.superbox;
 
-    const updatedTeams = gameState.teams.map(team =>
-      team.id === teamId
-        ? { ...team, boxesWon: [...team.boxesWon, gameState.currentBoxId] }
-        : team
-    );
+    const prizeFightLoser = gameState.prizeFightTeams
+      ? gameState.prizeFightTeams.find(id => id !== teamId)
+      : null;
+
+    const updatedTeams = gameState.teams.map(team => {
+      if (team.id === teamId) {
+        return { ...team, boxesWon: [...team.boxesWon, gameState.currentBoxId] };
+      }
+      if (team.id === prizeFightLoser) {
+        return { ...team, eliminated: true };
+      }
+      return team;
+    });
 
     setGameState({
       ...gameState,
@@ -541,6 +612,8 @@ export function GameProvider({ children }) {
       superbox: updatedSuperbox,
       teams: updatedTeams,
       currentPhase: 'celebration',
+      prizeFightTeams: null,
+      superboxCompetitors: gameState.currentBoxId === 'superbox' ? null : gameState.superboxCompetitors,
     });
   };
 
@@ -551,6 +624,7 @@ export function GameProvider({ children }) {
         setGameState,
         initializeGame,
         startBox,
+        beginSuperbox,
         submitNumericalAnswers,
         submitOrdering,
         revealNumber,
