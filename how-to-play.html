@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Play — What's in the Box?</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface-2: #222240;
+    --accent: #e94560;
+    --accent-glow: rgba(233, 69, 96, .35);
+    --gold: #f5c842;
+    --gold-glow: rgba(245, 200, 66, .3);
+    --teal: #16c79a;
+    --teal-glow: rgba(22, 199, 154, .3);
+    --blue: #4da6ff;
+    --purple: #a855f7;
+    --text: #e8e8f0;
+    --text-dim: #9999b3;
+    --border: rgba(255,255,255,.08);
+    --radius: 14px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* --- Hero --- */
+  .hero {
+    position: relative;
+    text-align: center;
+    padding: 80px 24px 60px;
+    background: linear-gradient(170deg, #1a1030 0%, var(--bg) 100%);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 600px 400px at 50% 30%, var(--accent-glow), transparent);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  /* floating boxes decoration */
+  .floating-boxes {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .floating-boxes .box-icon {
+    position: absolute;
+    font-size: 2rem;
+    opacity: .12;
+    animation: floatUp 12s linear infinite;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(100vh) rotate(0deg); opacity: .12; }
+    50%  { opacity: .2; }
+    100% { transform: translateY(-120px) rotate(360deg); opacity: 0; }
+  }
+
+  /* --- Nav tabs --- */
+  .tab-nav {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 16px 24px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .25s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { background: var(--surface-2); color: var(--text); }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  /* --- Sections --- */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .section {
+    display: none;
+    padding: 48px 0 64px;
+    animation: fadeSlide .4s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title .icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  /* --- Cards --- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    transition: border-color .3s;
+  }
+  .card:hover { border-color: rgba(255,255,255,.15); }
+  .card h3 {
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card p, .card li { color: var(--text-dim); }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+  .card li::marker { color: var(--accent); }
+
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
+  }
+
+  /* --- Wildcard grid --- */
+  .wildcard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .wc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    cursor: pointer;
+    transition: all .3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .wc-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .wc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .wc-card .wc-icon {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+  .wc-card h4 { font-size: 1rem; margin-bottom: 6px; }
+  .wc-card p { font-size: .88rem; color: var(--text-dim); line-height: 1.5; }
+  .wc-card .wc-count {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: .75rem;
+    background: rgba(255,255,255,.08);
+    padding: 3px 10px;
+    border-radius: 999px;
+    color: var(--text-dim);
+  }
+  .wc-card.teal::before   { background: var(--teal); }
+  .wc-card.gold::before   { background: var(--gold); }
+  .wc-card.accent::before { background: var(--accent); }
+  .wc-card.blue::before   { background: var(--blue); }
+  .wc-card.purple::before { background: var(--purple); }
+
+  .wc-card .wc-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease, margin .35s;
+    margin-top: 0;
+  }
+  .wc-card.open .wc-detail {
+    max-height: 200px;
+    margin-top: 10px;
+  }
+  .wc-card .wc-detail p {
+    font-size: .84rem;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  /* --- Grid demo --- */
+  .grid-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0;
+  }
+  .grid-row { display: flex; gap: 8px; }
+  .grid-cell {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .3s;
+    border: 2px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-dim);
+    user-select: none;
+  }
+  .grid-cell:hover { border-color: var(--accent); }
+  .grid-cell.revealed {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: scale(1.08);
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .grid-cell.word-cell.revealed { background: var(--teal); border-color: var(--teal); box-shadow: 0 0 16px var(--teal-glow); }
+  .grid-cell.decoy-cell.revealed { background: #444; border-color: #555; box-shadow: none; }
+  .grid-cell.wildcard-cell.revealed { background: var(--gold); border-color: var(--gold); color: #000; box-shadow: 0 0 16px var(--gold-glow); }
+
+  .grid-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .grid-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .85rem;
+    color: var(--text-dim);
+  }
+  .grid-legend .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* --- Phrase demo --- */
+  .phrase-demo {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .phrase-slot {
+    border: 2px dashed rgba(255,255,255,.2);
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    min-width: 110px;
+    text-align: center;
+    transition: all .4s;
+    color: var(--text-dim);
+  }
+  .phrase-slot.filled {
+    border-style: solid;
+    border-color: var(--teal);
+    color: var(--teal);
+    background: rgba(22, 199, 154, .08);
+  }
+
+  /* --- Timeline --- */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), var(--gold), var(--teal));
+    border-radius: 2px;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -32px;
+    top: 6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .tl-item:nth-child(even)::before { background: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+  .tl-item:nth-child(3n)::before { background: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+  .tl-item h4 { font-size: 1.05rem; margin-bottom: 4px; }
+  .tl-item p { font-size: .92rem; color: var(--text-dim); }
+
+  /* --- Scoring table --- */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+  .score-table th, .score-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-table th {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .score-table td { color: var(--text-dim); }
+  .score-table tr:hover td { color: var(--text); }
+
+  /* --- Tips --- */
+  .tip-banner {
+    background: linear-gradient(135deg, rgba(233,69,96,.1), rgba(245,200,66,.1));
+    border: 1px solid rgba(233,69,96,.2);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .tip-banner .tip-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+  .tip-banner p { color: var(--text-dim); font-size: .93rem; }
+
+  /* --- Accordion (FAQ) --- */
+  .accordion { margin-bottom: 12px; }
+  .accordion-header {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    text-align: left;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all .25s;
+  }
+  .accordion-header:hover { border-color: rgba(255,255,255,.15); }
+  .accordion-header .arrow {
+    transition: transform .3s;
+    font-size: .8rem;
+    color: var(--text-dim);
+  }
+  .accordion.open .accordion-header {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: var(--accent);
+  }
+  .accordion.open .arrow { transform: rotate(180deg); }
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .accordion.open .accordion-body { max-height: 600px; }
+  .accordion-body-inner {
+    padding: 18px 22px;
+    color: var(--text-dim);
+    font-size: .93rem;
+    line-height: 1.7;
+  }
+
+  /* --- Superbox callout --- */
+  .superbox-callout {
+    background: linear-gradient(135deg, #2a1a3e, #1a1a2e);
+    border: 1px solid rgba(168, 85, 247, .3);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .superbox-callout::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(168,85,247,.15), transparent 60%);
+    pointer-events: none;
+  }
+  .superbox-callout h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    color: var(--purple);
+  }
+  .superbox-callout p { color: var(--text-dim); }
+  .superbox-callout ul { margin-top: 10px; padding-left: 20px; }
+  .superbox-callout li { color: var(--text-dim); margin-bottom: 4px; }
+  .superbox-callout li::marker { color: var(--purple); }
+
+  /* --- Footer --- */
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text-dim);
+    font-size: .85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* --- Responsive --- */
+  @media (max-width: 600px) {
+    .tab-btn { padding: 8px 14px; font-size: .8rem; }
+    .card { padding: 20px; }
+    .grid-cell { width: 42px; height: 42px; font-size: .85rem; }
+    .wildcard-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="floating-boxes" id="floatingBoxes"></div>
+  <h1>What's in the <span>Box</span>?</h1>
+  <p>A party trivia game where teams race to uncover hidden phrases, dodge decoys, and unleash wildcards.</p>
+</header>
+
+<!-- Tab navigation -->
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" data-tab="overview">Overview</button>
+  <button class="tab-btn" data-tab="setup">Setup</button>
+  <button class="tab-btn" data-tab="gameplay">Gameplay</button>
+  <button class="tab-btn" data-tab="grid">The Grid</button>
+  <button class="tab-btn" data-tab="wildcards">Wildcards</button>
+  <button class="tab-btn" data-tab="superbox">Super Box</button>
+  <button class="tab-btn" data-tab="faq">FAQ &amp; Tips</button>
+</nav>
+
+<!-- ====== OVERVIEW ====== -->
+<div class="container">
+<section class="section active" id="sec-overview">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--accent)">&#127919;</span>
+    Objective
+  </h2>
+
+  <div class="card">
+    <h3>&#128230; Guess the Phrase, Win the Box</h3>
+    <p>Each box hides a <strong>3-word phrase</strong> related to a category. Teams answer trivia questions to earn turns, then reveal numbered tiles on a grid. Behind each tile is a <strong>real word</strong>, a <strong>decoy</strong>, or a <strong>wildcard</strong>. Pick the right words to complete the phrase and claim the box!</p>
+  </div>
+
+  <div class="card">
+    <h3>&#127942; How to Win</h3>
+    <ul>
+      <li>There are <strong>5 regular boxes</strong> and <strong>1 Super Box</strong>.</li>
+      <li>The team that collects the most boxes wins the game.</li>
+      <li>The <strong>Super Box</strong> is the ultimate prize — harder to crack but worth the glory.</li>
+      <li>Wildcards can steal boxes, freeze opponents, or flip the game on its head.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>&#128101; Who Can Play?</h3>
+    <p><strong>2 to 8 teams</strong> — any number of players per team. Perfect for game nights, parties, and classroom fun. No special roles; every team competes equally.</p>
+  </div>
+</section>
+
+<!-- ====== SETUP ====== -->
+<section class="section" id="sec-setup">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--teal)">&#9881;&#65039;</span>
+    Setup
+  </h2>
+
+  <div class="card">
+    <h3><span class="step-number">1</span> Choose Your Teams</h3>
+    <p>Enter <strong>2 to 8 team names</strong> on the setup screen. Each team can have any number of players — just huddle together!</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="step-number">2</span> Understand the Board</h3>
+    <p>The main screen shows <strong>5 regular boxes</strong> and a <strong>Super Box</strong>. Boxes unlock sequentially — you must win the current box before the next one opens. The Super Box unlocks after <strong>2 regular boxes</strong> are won.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="step-number">3</span> Ready to Go!</h3>
+    <p>Select the first available box to begin. Each box shows its <strong>category</strong> as a hint (e.g., "Movies", "Space"). The phrase inside is always related to that category.</p>
+  </div>
+</section>
+
+<!-- ====== GAMEPLAY ====== -->
+<section class="section" id="sec-gameplay">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--gold)">&#127918;</span>
+    Gameplay
+  </h2>
+
+  <p style="color:var(--text-dim);margin-bottom:28px;">Each box follows the same loop until a team completes the phrase.</p>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <h4>1. Numerical Question</h4>
+      <p>A trivia question with a numerical answer is shown to <strong>all eligible teams</strong>. Each team submits their best guess. The team <strong>closest to the correct answer</strong> wins control of the box for this round.</p>
+    </div>
+    <div class="tl-item">
+      <h4>2. Ordering Question</h4>
+      <p>The winning team must <strong>arrange 4 items in the correct order</strong> (e.g., chronological, smallest to largest). The number of correct placements determines how many turns they earn.</p>
+    </div>
+    <div class="tl-item">
+      <h4>3. Earn Turns</h4>
+      <p>Turns are based on how well you ordered the items:</p>
+      <table class="score-table">
+        <tr><th>Correct Placements</th><th>Turns Earned</th></tr>
+        <tr><td>4 of 4 correct</td><td>3 turns</td></tr>
+        <tr><td>2 of 4 correct</td><td>2 turns</td></tr>
+        <tr><td>1 of 4 correct</td><td>1 turn</td></tr>
+        <tr><td>0 correct</td><td>0 — back to step 1</td></tr>
+      </table>
+    </div>
+    <div class="tl-item">
+      <h4>4. Reveal Numbers</h4>
+      <p>Use your earned turns to <strong>click numbers on the grid</strong>. Each click reveals a real word, a decoy, or a wildcard. See the <em>Grid</em> tab for details.</p>
+    </div>
+    <div class="tl-item">
+      <h4>5. Guess the Phrase</h4>
+      <p>As words appear, try to place them into the <strong>3 blank phrase slots</strong>. Correct picks fill a slot. An <strong>incorrect pick ends your turn immediately</strong> — be careful!</p>
+    </div>
+    <div class="tl-item">
+      <h4>6. Win the Box</h4>
+      <p>Fill all 3 phrase slots correctly and the box is yours! The game returns to the main board for the next box.</p>
+    </div>
+  </div>
+
+  <div class="tip-banner">
+    <span class="tip-icon">&#128161;</span>
+    <p>If you get 0 correct on the ordering question, you earn no turns and the loop resets to a new numerical question. Another team could steal control!</p>
+  </div>
+</section>
+
+<!-- ====== THE GRID ====== -->
+<section class="section" id="sec-grid">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--blue)">&#128178;</span>
+    The Grid
+  </h2>
+
+  <div class="card">
+    <h3>&#128200; Pyramid Layout</h3>
+    <p>Each box has a grid of <strong>15 numbered tiles</strong> arranged in a pyramid (5-4-3-2-1). Click a tile to reveal what's behind it — each click costs 1 turn.</p>
+  </div>
+
+  <p style="text-align:center;color:var(--text-dim);margin:8px 0 4px;">Click tiles below to see what they might reveal:</p>
+
+  <div class="grid-demo" id="gridDemo"></div>
+
+  <div class="grid-legend">
+    <span><span class="dot" style="background:var(--teal)"></span> Real Word</span>
+    <span><span class="dot" style="background:#555"></span> Decoy Word</span>
+    <span><span class="dot" style="background:var(--gold)"></span> Wildcard</span>
+  </div>
+
+  <div class="card" style="margin-top:24px;">
+    <h3>&#127922; What Hides Behind Each Tile?</h3>
+    <ul>
+      <li><strong>3 Real Words</strong> — these form the secret phrase (e.g., "Silver", "Screen", "Legend").</li>
+      <li><strong>3 Decoy Words</strong> — related to the category but <em>not</em> part of the phrase. Picking one ends your turn!</li>
+      <li><strong>9 Wildcards</strong> — special powers that can help you or hurt your opponents.</li>
+    </ul>
+  </div>
+
+  <h3 style="margin-top:32px;margin-bottom:16px;">Phrase Builder</h3>
+  <p style="color:var(--text-dim);margin-bottom:12px;">As you reveal real words, place them into the phrase slots. Here's an example for the category <strong>"Movies"</strong>:</p>
+
+  <div class="phrase-demo" id="phraseDemo">
+    <div class="phrase-slot" id="slot0">_ _ _</div>
+    <div class="phrase-slot" id="slot1">_ _ _</div>
+    <div class="phrase-slot" id="slot2">_ _ _</div>
+  </div>
+  <div style="text-align:center;margin-top:8px;">
+    <button id="phraseDemoBtn" style="background:var(--teal);color:#fff;border:none;padding:10px 24px;border-radius:999px;cursor:pointer;font-weight:600;font-size:.9rem;transition:transform .2s;">
+      Reveal the Phrase
+    </button>
+  </div>
+</section>
+
+<!-- ====== WILDCARDS ====== -->
+<section class="section" id="sec-wildcards">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--gold);color:#000">&#9889;</span>
+    Wildcards
+  </h2>
+
+  <p style="color:var(--text-dim);margin-bottom:24px;">Each box contains <strong>9 wildcards</strong> randomly assigned to tiles. Click a card to see more detail.</p>
+
+  <div class="wildcard-grid">
+
+    <div class="wc-card teal" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;3</span>
+      <div class="wc-icon">&#128101;</div>
+      <h4>Who's Next</h4>
+      <p>Choose which team answers the next numerical question.</p>
+      <div class="wc-detail">
+        <p>This is the most common wildcard. Use it strategically to hand a tough question to a weaker team, or give yourself another shot.</p>
+      </div>
+    </div>
+
+    <div class="wc-card gold" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#128260;</div>
+      <h4>Extra Turn</h4>
+      <p>Gain 1 additional turn to reveal another tile.</p>
+      <div class="wc-detail">
+        <p>Immediately adds a turn to your current round. Use it to dig deeper into the grid before your turns run out.</p>
+      </div>
+    </div>
+
+    <div class="wc-card blue" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#128465;&#65039;</div>
+      <h4>Remove Decoy</h4>
+      <p>Eliminate one decoy word from the board.</p>
+      <div class="wc-detail">
+        <p>Narrows the field by removing a trap word. Especially useful when you're down to your last guess and don't want to risk picking wrong.</p>
+      </div>
+    </div>
+
+    <div class="wc-card accent" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#129397;</div>
+      <h4>Steal</h4>
+      <p>Take a previously won box from another team.</p>
+      <div class="wc-detail">
+        <p>Only available when at least one other team owns a box. Pick which team to steal from. This can completely change the standings!</p>
+      </div>
+    </div>
+
+    <div class="wc-card purple" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#10052;&#65039;</div>
+      <h4>Freeze Out</h4>
+      <p>Block a team from the next numerical question.</p>
+      <div class="wc-detail">
+        <p>The frozen team cannot submit an answer for the next round. Use it to knock out your biggest threat temporarily. Cannot be used during a Prize Fight.</p>
+      </div>
+    </div>
+
+    <div class="wc-card gold" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#127873;</div>
+      <h4>Prize Pass</h4>
+      <p>Move a box from one team to another.</p>
+      <div class="wc-detail">
+        <p>You control where the box goes — take from a rival and give to an ally (or yourself). Requires at least one team to own a box.</p>
+      </div>
+    </div>
+
+    <div class="wc-card accent" onclick="this.classList.toggle('open')">
+      <span class="wc-count">&times;1</span>
+      <div class="wc-icon">&#9876;&#65039;</div>
+      <h4>Prize Fight</h4>
+      <p>Challenge another team. Loser is eliminated from the game!</p>
+      <div class="wc-detail">
+        <p>Both teams face off in a new numerical question — closest answer wins. The losing team is permanently removed. High risk, high reward. Not available in the first box.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tip-banner" style="margin-top:24px;">
+    <span class="tip-icon">&#9888;&#65039;</span>
+    <p>The first box does <strong>not</strong> contain Steal, Prize Pass, or Prize Fight wildcards — those are replaced with safer wildcards so the game warms up gently.</p>
+  </div>
+</section>
+
+<!-- ====== SUPER BOX ====== -->
+<section class="section" id="sec-superbox">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--purple)">&#128142;</span>
+    The Super Box
+  </h2>
+
+  <div class="superbox-callout">
+    <h3>&#128142; The Ultimate Challenge</h3>
+    <p>The Super Box unlocks after <strong>2 regular boxes</strong> have been won. It's the crown jewel of the game.</p>
+    <ul>
+      <li><strong>2 teams</strong> are selected to compete head-to-head.</li>
+      <li>Only those 2 teams participate in numerical and ordering questions.</li>
+      <li>The grid contains <strong>6 decoys</strong> instead of the usual 3 — twice the traps!</li>
+      <li>Wildcards are limited to Who's Next, Extra Turn, and Remove Decoy (no Steal, Freeze, or Prize Fight).</li>
+      <li>The loser in a Prize Fight during the Super Box round is eliminated.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>&#128300; How It Differs from Regular Boxes</h3>
+    <table class="score-table">
+      <tr><th>Feature</th><th>Regular Box</th><th>Super Box</th></tr>
+      <tr><td>Teams competing</td><td>All teams</td><td>2 selected teams</td></tr>
+      <tr><td>Decoy words</td><td>3</td><td>6</td></tr>
+      <tr><td>Dangerous wildcards</td><td>Steal, Prize Fight, etc.</td><td>None</td></tr>
+      <tr><td>Difficulty</td><td>Standard</td><td>Harder</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ====== FAQ & TIPS ====== -->
+<section class="section" id="sec-faq">
+  <h2 class="section-title">
+    <span class="icon" style="background:var(--accent)">&#10067;</span>
+    FAQ &amp; Tips
+  </h2>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      What happens if two teams tie on the numerical question?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      The host manually selects the winning team from among those who tied. There's no automatic tiebreaker — it's at the host's discretion.
+    </div></div>
+  </div>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      Can a frozen team still win the box?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      No. A frozen team is skipped for the next numerical question. They cannot compete for control during that round. The freeze wears off after one round.
+    </div></div>
+  </div>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      What if I pick a wrong word for the phrase?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      Your turn ends immediately. You go back to the ordering question phase — another team may take control via the numerical question. Be strategic and only guess when you're confident!
+    </div></div>
+  </div>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      Do boxes have to be played in order?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      Yes. Boxes unlock sequentially. You must win the current box before the next one becomes available. The Super Box is the exception — it unlocks once any 2 regular boxes are won.
+    </div></div>
+  </div>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      Can an eliminated team come back?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      No. Once a team loses a Prize Fight, they are permanently eliminated from the game. Choose your battles wisely!
+    </div></div>
+  </div>
+
+  <div class="accordion">
+    <button class="accordion-header" onclick="toggleAccordion(this)">
+      Any strategy tips?
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="accordion-body"><div class="accordion-body-inner">
+      <ul style="padding-left:18px;">
+        <li><strong>Don't guess blindly.</strong> Wait until you've revealed enough words to be confident about the phrase.</li>
+        <li><strong>Watch the category.</strong> It's your biggest clue — think of common phrases related to it.</li>
+        <li><strong>Save wildcards mentally.</strong> Remember which tiles have been revealed as wildcards and which are still hidden.</li>
+        <li><strong>Ordering matters.</strong> Study up on chronological and factual orderings — 3 turns vs 1 is a huge difference.</li>
+        <li><strong>Use Freeze Out wisely.</strong> Target the team in the lead to slow them down.</li>
+      </ul>
+    </div></div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  What's in the Box? &mdash; A party trivia game for 2&ndash;8 teams.
+</footer>
+
+<script>
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const sections = document.querySelectorAll('.section');
+
+tabs.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabs.forEach(b => b.classList.remove('active'));
+    sections.forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Floating box icons
+(function() {
+  const container = document.getElementById('floatingBoxes');
+  const icons = ['📦','🎁','🎲','✨','🏆','⭐'];
+  for (let i = 0; i < 14; i++) {
+    const span = document.createElement('span');
+    span.className = 'box-icon';
+    span.textContent = icons[i % icons.length];
+    span.style.left = Math.random() * 100 + '%';
+    span.style.animationDelay = Math.random() * 12 + 's';
+    span.style.animationDuration = (10 + Math.random() * 8) + 's';
+    container.appendChild(span);
+  }
+})();
+
+// Interactive grid demo
+(function() {
+  const demo = document.getElementById('gridDemo');
+  const rows = [5, 4, 3, 2, 1];
+  const cellTypes = [];
+  // 3 words, 3 decoys, 9 wildcards
+  const types = ['word','word','word','decoy','decoy','decoy',
+    'wildcard','wildcard','wildcard','wildcard','wildcard',
+    'wildcard','wildcard','wildcard','wildcard'];
+  // shuffle
+  for (let i = types.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [types[i], types[j]] = [types[j], types[i]];
+  }
+
+  const words = ['Silver','Screen','Legend'];
+  const decoys = ['Popcorn','Ticket','Reel'];
+  const wcLabels = ['WN','WN','WN','ET','RD','FO','ST','PP','PF'];
+  let wi = 0, di = 0, wci = 0;
+  let num = 1;
+
+  rows.forEach(count => {
+    const row = document.createElement('div');
+    row.className = 'grid-row';
+    for (let c = 0; c < count; c++) {
+      const cell = document.createElement('div');
+      const idx = num - 1;
+      const type = types[idx];
+      cell.className = 'grid-cell ' + type + '-cell';
+      cell.textContent = num;
+
+      let label;
+      if (type === 'word') label = words[wi++];
+      else if (type === 'decoy') label = decoys[di++];
+      else label = '⚡ ' + wcLabels[wci++];
+
+      cell.dataset.label = label;
+      cell.dataset.num = num;
+
+      cell.addEventListener('click', function() {
+        if (this.classList.contains('revealed')) {
+          this.classList.remove('revealed');
+          this.textContent = this.dataset.num;
+        } else {
+          this.classList.add('revealed');
+          this.textContent = this.dataset.label;
+        }
+      });
+
+      row.appendChild(cell);
+      num++;
+    }
+    demo.appendChild(row);
+  });
+})();
+
+// Phrase demo animation
+(function() {
+  const btn = document.getElementById('phraseDemoBtn');
+  const words = ['Silver','Screen','Legend'];
+  let step = 0;
+
+  btn.addEventListener('click', () => {
+    if (step < 3) {
+      const slot = document.getElementById('slot' + step);
+      slot.textContent = words[step];
+      slot.classList.add('filled');
+      step++;
+      if (step === 3) btn.textContent = 'Reset';
+    } else {
+      for (let i = 0; i < 3; i++) {
+        const slot = document.getElementById('slot' + i);
+        slot.textContent = '_ _ _';
+        slot.classList.remove('filled');
+      }
+      step = 0;
+      btn.textContent = 'Reveal the Phrase';
+    }
+  });
+})();
+
+// Accordion toggle
+function toggleAccordion(header) {
+  const acc = header.parentElement;
+  acc.classList.toggle('open');
+}
+</script>
+</body>
+</html>
